@@ -20,66 +20,64 @@ Run at the command prompt:
 
 gem install astroboa-rb
  
-To use the Ruby client just copy the two classes in your PHP project and read the documentation at http://www.astroboa.org/section/astroboa-php-client. You can instantly try the examples provided in the documentation without setting up your own repository since they use the online astroboa demo repository that holds books from the Gutenberg Project.
+To learn how to use the Ruby client read the documentation at http://www.astroboa.org/section/astroboa-ruby-client. 
+You can instantly try the examples provided in the documentation without setting up your own repository since they use the online astroboa demo repository that holds books from the Gutenberg Project.
 
-If you are eager to see how the client works find below an example that creates a new user and then reads her back from the repository and updates her birthday
+If you are eager to see how the client works find below some examples
 
 EXAMPLE:
 
-require_once('AstroboaClient.php');
+# encoding: utf-8
+require 'astroboa-rb'
 
-$secureAstroboaClient = new AstroboaClient('localhost:8080', 'myRepository', 'username', 'password');
+astroboaClient = Astroboa::Client.new('demo.betaconcept.com', 'demorepository')
 
-// Add a new person
-$person = array(
-			"contentObjectTypeName" => "personObject"
-		);
+astroboaClient.on_error do |exception|
+  puts exception.message
+end
 
-$person['title'] = 'Elena Brown';						
-			);
-$person['name']['givenName'] = 'Elena';
-$person['name']['familyName'] = 'Brown';
+# create a new text object
+# createObject(objectHash, &exception_block)
+my_new_text_resource = {"contentObjectTypeName" => "genericContentResourceObject", "profile" => {"title" => "Hello Panagiotis", "description" => "γειά σου παναγιώτη"}, "body" => 'Hello Panagiotis this my body'}
+my_new_text_resource_id = astroboaClient.createObject my_new_text_resource
+puts "created object with id: #{my_new_text_resource_id}" 
+
+# getObject(idOrName, projectionPaths = nil, output = :hash, &exception_block)
+# READ ASTROBOA OBJECT AS RUBY HASH
+retrieved_text_resource = astroboaClient.getObject my_new_text_resource_id
+puts "The retrieved resource is: #{retrieved_text_resource}"
+puts retrieved_text_resource['profile']['title']
+
+# READ ASTROBOA OBJECT AS RUBY OBJECT
+retrieved_text_resource = astroboaClient.getObject(my_new_text_resource_id, nil, :object)  
+puts "I retrieved the resource as object and the title is: #{retrieved_text_resource.profile.title}"
+puts "The retrieved resource is: #{retrieved_text_resource}"
+
+# updateObject(objectHash, updateLastModificationTime = true, &exception_block)
+resource = {"contentObjectTypeName" => "genericContentResourceObject", "cmsIdentifier" => my_new_text_resource_id, "body" => "Updated Body Text with hello"}
+response = astroboaClient.updateObject resource
+puts "I updated the object and the response is: #{response}"
 
 
-$response = $secureAstroboaClient->addObject($person);
-if ($response->ok()) {
-	$userId = $request->getResponseBody();
-	error_log('successfully created new person object with id: ' . $userId);
-}
-else {
-	$responseInfo = $response->getResponseInfo();
-	error_log('An error occurred while trying to save new user profile. The error response from Resource API is:' . $responseInfo['http_code']);	
-}
+text_resource = astroboaClient.getObject my_new_text_resource_id
+puts "I will read the updated resource back and the updated body is #{text_resource['body']}"
 
+# Read object collections
+# getObjectCollection(query, projectionPaths = nil, offset = 0, limit = 50, orderBy='profile.modified desc', output = :hash, &exception_block)
+query = 'objectType="genericContentResourceObject" AND body CONTAINS "Hello"'
+resource_collection = astroboaClient.getObjectCollection(query)
 
-
-// Read the person and update it
-// Elena-Brown is an auto-generated friendly internal name that can be used besides the object id
-$response = $secureAstroboaClient->getObjectByIdOrName('Elena-Brown'); 
-
-if ($response->ok()) {
-	$person = $response->getResponseBodyAsArray();
-	// if you prefer to get the response as object use: $person = $response->getResponseBodyAsObject();
-	
-	$time = mktime(0,0,0, 9, 27, 1985);
-	$iso8601Birthday = date('Y-m-d\TH:i:s.uP', $time);
-	$person['birthday'] = $iso8601Birthday;
-	
-	$updateResponse = $this->secureAstroboaClient->updateObject($person);
-		if ($updateResponse->ok) {
-			error_log('Successfully updated user: ' . $person['profile']['title']);
-		}
-		else {
-			$responseInfo = $updateResponse->getResponseInfo();
-			error_log('An error occurred while trying to persist user profile. The error response from Resource API is:' . $responseInfo['http_code']);
-		}
-
-}
-else {
-	$responseInfo = $response->getResponseInfo();
-	error_log('The query that finds the user returned with error code: '. $responseInfo['http_code']);
-} 
-
+text_resources = resource_collection['resourceCollection']['resource']
+found_id = nil
+puts "Looking for resource #{my_new_text_resource_id}"
+text_resources.each do |text_resource|
+  puts text_resource['cmsIdentifier']
+  if text_resource['cmsIdentifier'] == my_new_text_resource_id
+    found_id = text_resource['cmsIdentifier']
+    break
+  end 
+end
+puts "found #{found_id}"
 
 
 
