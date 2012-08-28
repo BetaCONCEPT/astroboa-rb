@@ -69,9 +69,13 @@ module Astroboa
     # API
     #
   
-    def getObject(idOrName, projectionPaths = nil, output = :hash, &exception_block)
+    def getObject(idOrName, options = {}, &exception_block)
+      
       if idOrName && !idOrName.empty?
         begin
+          projectionPaths = options[:project]
+          output = options[:output] ||= :hash
+          
           case output
           when :json
             acceptHeader = :json
@@ -316,8 +320,8 @@ module Astroboa
         'User-Agent' => gem_version,
         'X-Ruby-Version' => RUBY_VERSION,
         'X-Ruby-Platform' => RUBY_PLATFORM
-        }
-      end
+      }
+    end
   
   
       def create_repository_resources(repository)
