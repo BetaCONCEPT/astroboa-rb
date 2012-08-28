@@ -40,7 +40,7 @@ module Astroboa
       # all other resources require a repository to be specified
       create_repository_resources(repository)
 
-      @log = Logger.new('/tmp/astroboa-ruby-client-log.txt')
+      @log = Logger.new('/tmp/astroboa-rb-log.txt')
       @log.level = Logger::WARN
     
       RestClient.log = @log
@@ -168,8 +168,14 @@ module Astroboa
       end      	
     end
     
-    def getObjectCollection(query, projectionPaths = nil, offset = 0, limit = 50, orderBy='profile.modified desc', output = :hash, &exception_block)
+    def getObjectCollection(query = nil, options = {}, &exception_block)
       begin
+        projectionPaths = options[:project] 
+        offset = options[:offset] ||= 0 
+        limit = options[:limit] ||= 50 
+        orderBy = options[:orderBy] ||= 'profile.modified desc'
+        output = options[:output] ||= :hash
+        
         case output
         when :json
           acceptHeader = :json
@@ -295,7 +301,7 @@ module Astroboa
           api_response = api_exception.response ||= 'The astroboa api call did not produce any response'
         end
       end
-      AstroboaRubyClient::ClientError.new(message, api_code, api_response)
+      Astroboa::ClientError.new(message, api_code, api_response)
     end
     
     def astroboa_client_headers
@@ -327,7 +333,7 @@ module Astroboa
       end
   end # class Client
 
-end # Module AstroboaRubyClient
+end # Module Astroboa
   
   
 class Object
